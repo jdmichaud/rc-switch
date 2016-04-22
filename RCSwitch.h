@@ -10,7 +10,7 @@
   - Frank Oltmanns / <first name>.<last name>(at)gmail(dot)com
   - Max Horn / max(at)quendi(dot)de
   - Robert ter Vehn / <first name>.<last name>(at)gmail(dot)com
-  
+
   Project home: https://github.com/sui77/rc-switch/
 
   This library is free software; you can redistribute it and/or
@@ -77,7 +77,7 @@ class RCSwitch {
 
   public:
     RCSwitch();
-    
+
     void switchOn(int nGroupNumber, int nSwitchNumber);
     void switchOff(int nGroupNumber, int nSwitchNumber);
     void switchOn(const char* sGroup, int nSwitchNumber);
@@ -92,9 +92,10 @@ class RCSwitch {
     void sendTriState(const char* Code);
     void send(unsigned long Code, unsigned int length);
     void send(const char* Code);
-    
+
     #if not defined( RCSwitchDisableReceiving )
     void enableReceive(int interrupt);
+    void registerCustomInterruptHandler(void (*function)(void));
     void enableReceive();
     void disableReceive();
     bool available();
@@ -106,7 +107,7 @@ class RCSwitch {
     unsigned int getReceivedProtocol();
     unsigned int* getReceivedRawdata();
     #endif
-  
+
     void enableTransmit(int nTransmitterPin);
     void disableTransmit();
     void setPulseLength(int nPulseLength);
@@ -147,7 +148,7 @@ class RCSwitch {
     void transmit(HighLow pulses);
 
     static char* dec2binWcharfill(unsigned long dec, unsigned int length, char fill);
-    
+
     #if not defined( RCSwitchDisableReceiving )
     static void handleInterrupt();
     static bool receiveProtocol(const int p, unsigned int changeCount);
@@ -155,7 +156,7 @@ class RCSwitch {
     #endif
     int nTransmitterPin;
     int nRepeatTransmit;
-    
+
     Protocol protocol;
 
     #if not defined( RCSwitchDisableReceiving )
@@ -165,13 +166,13 @@ class RCSwitch {
     static unsigned int nReceivedDelay;
     static unsigned int nReceivedProtocol;
     const static unsigned int nSeparationLimit;
-    /* 
+    /*
      * timings[0] contains sync timing, followed by a number of bits
      */
     static unsigned int timings[RCSWITCH_MAX_CHANGES];
     #endif
 
-    
+
 };
 
 #endif

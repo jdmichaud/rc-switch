@@ -1,7 +1,7 @@
 /*
   RCSwitch - Arduino libary for remote control outlet switches
   Copyright (c) 2011 Suat Özgür.  All right reserved.
-  
+
   Contributors:
   - Andre Koehler / info(at)tomate-online(dot)de
   - Gordeev Andrey Vladimirovich / gordeev(at)openpyro(dot)com
@@ -13,7 +13,7 @@
   - Robert ter Vehn / <first name>.<last name>(at)gmail(dot)com
   - Johann Richard / <first name>.<last name>(at)gmail(dot)com
   - Vlad Gheorghe / <first name>.<last name>(at)gmail(dot)com https://github.com/vgheo
-  
+
   Project home: https://github.com/sui77/rc-switch/
 
   This library is free software; you can redistribute it and/or
@@ -35,7 +35,7 @@
 
 /* Format for protocol definitions:
  * {pulselength, Sync bit, "0" bit, "1" bit}
- * 
+ *
  * pulselength: pulse length in microseconds, e.g. 350
  * Sync bit: {1, 31} means 1 high pulse and 31 low pulses
  *     (perceived as a 31*pulselength long pulse, total length of sync bit is
@@ -61,6 +61,8 @@ static const RCSwitch::Protocol PROGMEM proto[] = {
 };
 
 static const int numProto = sizeof(proto) / sizeof(proto[0]);
+
+static void (*g_custom_interrupt_handler)(void) = NULL;
 
 #if not defined( RCSwitchDisableReceiving )
 unsigned long RCSwitch::nReceivedValue = 0;
@@ -134,7 +136,7 @@ void RCSwitch::setReceiveTolerance(int nPercent) {
   RCSwitch::nReceiveTolerance = nPercent;
 }
 #endif
-  
+
 
 /**
  * Enable transmissions
@@ -280,7 +282,7 @@ void RCSwitch::switchOff(const char* sGroup, const char* sDevice) {
 char* RCSwitch::getCodeWordB(int nAddressCode, int nChannelCode, boolean bStatus) {
    int nReturnPos = 0;
    static char sReturn[13];
-   
+
    const char* code[5] = { "FFFF", "0FFF", "F0FF", "FF0F", "FFF0" };
    if (nAddressCode < 1 || nAddressCode > 4 || nChannelCode < 1 || nChannelCode > 4) {
     return '\0';
@@ -292,19 +294,19 @@ char* RCSwitch::getCodeWordB(int nAddressCode, int nChannelCode, boolean bStatus
    for (int i = 0; i<4; i++) {
      sReturn[nReturnPos++] = code[nChannelCode][i];
    }
-   
+
    sReturn[nReturnPos++] = 'F';
    sReturn[nReturnPos++] = 'F';
    sReturn[nReturnPos++] = 'F';
-   
+
    if (bStatus) {
       sReturn[nReturnPos++] = 'F';
    } else {
       sReturn[nReturnPos++] = '0';
    }
-   
+
    sReturn[nReturnPos] = '\0';
-   
+
    return sReturn;
 }
 
@@ -316,7 +318,7 @@ char* RCSwitch::getCodeWordA(const char* sGroup, const char* sDevice, boolean bO
     static char sDipSwitches[13];
     int i = 0;
     int j = 0;
-    
+
     for (i = 0; i < 5; i++) {
         sDipSwitches[j++] = (sGroup[i] == '0') ? 'F' : '0';
     }
@@ -344,11 +346,11 @@ char* RCSwitch::getCodeWordA(const char* sGroup, const char* sDevice, boolean bO
 char* RCSwitch::getCodeWordC(char sFamily, int nGroup, int nDevice, boolean bStatus) {
   static char sReturn[13];
   int nReturnPos = 0;
-  
+
   if ( (byte)sFamily < 97 || (byte)sFamily > 112 || nGroup < 1 || nGroup > 4 || nDevice < 1 || nDevice > 4) {
     return '\0';
   }
-  
+
   const char* sDeviceGroupCode =  dec2binWcharfill(  (nDevice-1) + (nGroup-1)*4, 4, '0'  );
   const char familycode[16][5] = {
       "0000", "F000", "0F00", "FF00",
@@ -388,7 +390,7 @@ char* RCSwitch::getCodeWordC(char sFamily, int nGroup, int nDevice, boolean bSta
  *
  * Source: http://www.the-intruder.net/funksteckdosen-von-rev-uber-arduino-ansteuern/
  *
- * @param sGroup        Name of the switch group (A..D, resp. a..d) 
+ * @param sGroup        Name of the switch group (A..D, resp. a..d)
  * @param nDevice       Number of the switch itself (1..3)
  * @param bStatus       Whether to switch on (true) or off (false)
  *
@@ -418,7 +420,7 @@ char* RCSwitch::getCodeWordD(char sGroup, int nDevice, boolean bStatus){
         default:
             return '\0';
     }
-    
+
     for (int i = 0; i<4; i++) {
         sReturn[nReturnPos++] = sGroupCode[i];
     }
@@ -477,7 +479,7 @@ void RCSwitch::sendTriState(const char* sCodeWord) {
       }
       i++;
     }
-    this->sendSync();    
+    this->sendSync();
   }
 }
 
@@ -515,7 +517,7 @@ void RCSwitch::transmit(int nHighPulses, int nLowPulses) {
         delayMicroseconds( this->protocol.pulseLength * nHighPulses);
         digitalWrite(this->nTransmitterPin, LOW);
         delayMicroseconds( this->protocol.pulseLength * nLowPulses);
-        
+
         #if not defined( RCSwitchDisableReceiving )
         if (nReceiverInterrupt_backup != -1) {
             this->enableReceive(nReceiverInterrupt_backup);
@@ -530,9 +532,9 @@ void RCSwitch::transmit(HighLow pulses) {
 
 /**
  * Sends a "0" Bit
- *                       _    
+ *                       _
  * Waveform Protocol 1: | |___
- *                       _  
+ *                       _
  * Waveform Protocol 2: | |__
  */
 void RCSwitch::send0() {
@@ -541,9 +543,9 @@ void RCSwitch::send0() {
 
 /**
  * Sends a "1" Bit
- *                       ___  
+ *                       ___
  * Waveform Protocol 1: |   |_
- *                       __  
+ *                       __
  * Waveform Protocol 2: |  |_
  */
 void RCSwitch::send1() {
@@ -599,6 +601,10 @@ void RCSwitch::sendSync() {
 void RCSwitch::enableReceive(int interrupt) {
   this->nReceiverInterrupt = interrupt;
   this->enableReceive();
+}
+
+void RCSwitch::registerCustomInterruptHandler(void (*function)(void)) {
+  g_custom_interrupt_handler = function;
 }
 
 void RCSwitch::enableReceive() {
@@ -699,34 +705,39 @@ void RCSwitch::handleInterrupt() {
   static unsigned int changeCount;
   static unsigned long lastTime;
   static unsigned int repeatCount;
-  
+
 
   long time = micros();
   duration = time - lastTime;
- 
+
   if (duration > RCSwitch::nSeparationLimit && diff(duration, RCSwitch::timings[0]) < 200) {
     repeatCount++;
     changeCount--;
     if (repeatCount == 2) {
-	for(unsigned int i = 1; i <= numProto; i++ ) {
-        if (receiveProtocol(i, changeCount)) {
-            // receive succeeded for protocol i
-            break;
-        }
+    for(unsigned int i = 1; i <= numProto; i++ ) {
+      if (receiveProtocol(i, changeCount)) {
+        // receive succeeded for protocol i
+        break;
+      }
     }
-      repeatCount = 0;
-    }
-    changeCount = 0;
-  } else if (duration > RCSwitch::nSeparationLimit) {
+    repeatCount = 0;
+  }
+  changeCount = 0;
+  }
+  else if (duration > RCSwitch::nSeparationLimit) {
     changeCount = 0;
   }
- 
+
   if (changeCount >= RCSWITCH_MAX_CHANGES) {
     changeCount = 0;
     repeatCount = 0;
   }
   RCSwitch::timings[changeCount++] = duration;
-  lastTime = time;  
+  lastTime = time;
+
+  // Call the custom interrupt handler
+  if (g_custom_interrupt_handler)
+    g_custom_interrupt_handler();
 }
 #endif
 
