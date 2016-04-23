@@ -32,7 +32,6 @@
 */
 
 #include "RCSwitch.h"
-
 /* Format for protocol definitions:
  * {pulselength, Sync bit, "0" bit, "1" bit}
  *
@@ -700,7 +699,6 @@ bool RCSwitch::receiveProtocol(const int p, unsigned int changeCount) {
 }
 
 void RCSwitch::handleInterrupt() {
-
   static unsigned int duration;
   static unsigned int changeCount;
   static unsigned long lastTime;
@@ -736,7 +734,7 @@ void RCSwitch::handleInterrupt() {
   lastTime = time;
 
   // Call the custom interrupt handler
-  if (g_custom_interrupt_handler)
+  if (g_custom_interrupt_handler && RCSwitch::nReceivedValue != 0)
     g_custom_interrupt_handler();
 }
 #endif
